@@ -1,0 +1,10 @@
+.tile {
+  width: 60px;
+  height: 60px;
+  position: relative;
+  border: 1px solid black;
+}
+
+.tile.wall {
+  background-color: var(--black);
+}

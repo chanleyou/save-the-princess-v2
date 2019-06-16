@@ -1,0 +1,11 @@
+.grid {
+  margin: 0 auto;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+}
+
+.column {
+  display: flex;
+  flex-flow: column-reverse nowrap;
+}
