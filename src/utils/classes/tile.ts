@@ -4,13 +4,7 @@ export class Tile {
   isWall: boolean
   unit: Unit | null
 
-  constructor(
-    readonly x: number,
-    readonly y: number,
-    readonly grid: Grid,
-    isWall: boolean = false,
-    unit = null
-  ) {
+  constructor(readonly x: number, readonly y: number, isWall: boolean = false, unit = null) {
     this.unit = unit
     this.isWall = isWall
   }
@@ -19,6 +13,9 @@ export class Tile {
     return !this.isWall && this.unit === null
   }
 }
+
+type Coordinates = [number, number]
+type Path = Coordinates[]
 
 export class Grid {
   readonly width: number
@@ -32,17 +29,17 @@ export class Grid {
     for (let y = 0; y < height; y++) {
       const row: Tile[] = []
       for (let x = 0; x < width; x++) {
-        const grid = this
-        row.push(new Tile(x, y, grid))
+        row.push(new Tile(x, y))
       }
       this.grid.push(row)
     }
   }
 
-  private validate(a: Tile, b: Tile = a) {
-    if (a.grid !== this || b.grid !== this) {
-      throw new Error('Tile(s) must belong to the grid.')
-    }
+  validate(...tiles: Tile[]) {
+    ;[...tiles].forEach(tile => {
+      const { x, y } = tile
+      if (this.get(x, y) !== tile) throw new Error('Tile does not belong in grid.')
+    })
   }
 
   get(x: number, y: number) {
@@ -61,31 +58,31 @@ export class Grid {
 
   dijkstra(origin: Tile) {
     this.validate(origin)
-
-    const output: Tile[][] = [[origin]]
-    const checked = [origin]
+    const { x, y } = origin
+    const output: Path[][] = [[[[x, y]]]]
+    const checked = new Set([origin])
     let done = false
     let distance = 0
 
     while (done === false) {
       let length = output.length
 
-      output[distance].forEach(tile => {
-        let { x, y } = tile
-        let newCoords: [number, number][] = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]
+      output[distance].forEach(path => {
+        const [x, y] = path[path.length - 1]
+        let newCoords: Coordinates[] = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]
 
-        newCoords.forEach(xy => {
-          const tile = this.get(...xy)
-          if (tile instanceof Tile) {
-            if (!checked.includes(tile)) {
-              checked.push(tile)
-              const { isPassable } = tile
-              if (isPassable) {
-                const newDistance = distance + 1
-                output[newDistance]
-                  ? output[newDistance].push(tile)
-                  : (output[newDistance] = [tile])
-              }
+        newCoords.forEach(coords => {
+          const tile = this.get(...coords)
+          if (tile !== null && !checked.has(tile)) {
+            checked.add(tile)
+            const { isPassable, x, y } = tile
+            if (isPassable) {
+              const newDistance = distance + 1
+
+              const newPath: Path = [...path, [x, y]]
+              output[newDistance]
+                ? output[newDistance].push(newPath)
+                : (output[newDistance] = [newPath])
             }
           }
         })
@@ -98,12 +95,6 @@ export class Grid {
       distance++
     }
 
-    const objOutput: any = {}
-
-    output.forEach((row, index) => {
-      objOutput[index] = [...row]
-    })
-
-    return objOutput
+    return output
   }
 }
